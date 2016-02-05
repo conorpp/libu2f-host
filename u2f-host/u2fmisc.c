@@ -44,6 +44,7 @@ dumpHex (unsigned char *data, int offs, int len)
   fprintf (stderr, "\n");
 }
 
+
 static int write_frame(struct u2fdevice *dev, U2FHID_FRAME *frame)
 {
     int len;
@@ -65,7 +66,7 @@ static int write_frame(struct u2fdevice *dev, U2FHID_FRAME *frame)
       return U2FH_TRANSPORT_ERROR;
     if (sizeof (U2FHID_FRAME) + 1 != len)
       return U2FH_TRANSPORT_ERROR;
-    return 0;
+    return U2FH_OK;
 }
 
 static void init_frame(U2FHID_FRAME *frame, struct u2fdevice *dev,
@@ -199,7 +200,11 @@ u2fh_sendrecv (u2fh_devs * devs, unsigned index, uint8_t cmd,
      {
         U2FHID_FRAME frame = { 0 };
         init_frame(&frame, dev, cmd, sendlen);
-        write_frame(dev, &frame);
+        int ec = write_frame(dev, &frame);
+        if (ec != U2FH_OK)
+          {
+            return ec;
+          }
      }
 
   while (sendlen > datasent)
@@ -231,7 +236,11 @@ u2fh_sendrecv (u2fh_devs * devs, unsigned index, uint8_t cmd,
       }
 
       {
-    write_frame(dev, &frame);
+    int ec = write_frame(dev, &frame);
+    if (ec != U2FH_OK)
+        {
+          return ec;
+        }
       }
     }
 
@@ -241,7 +250,7 @@ u2fh_sendrecv (u2fh_devs * devs, unsigned index, uint8_t cmd,
     int len = HID_RPT_SIZE;
     unsigned int maxlen = *recvlen;
     int recvddata = 0;
-    short datalen;
+    unsigned short datalen;
     int timeout = HID_TIMEOUT;
     int rc = 0;
 
